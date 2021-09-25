@@ -5,6 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMove : MonoBehaviour
 {
+    private float _gravityRef;
     private Rigidbody2D _rigidBody;
 
     [Header("Move")]
@@ -12,6 +13,7 @@ public class PlayerMove : MonoBehaviour
     private Vector2 movement;
     private float _moveX = 0f;
 
+    // UNDONE
     [Header("Jump")]
     [SerializeField] private float _jumpForce;
     [SerializeField] private Transform _feetPosition;
@@ -21,17 +23,23 @@ public class PlayerMove : MonoBehaviour
     private bool _isGrounded;
     private bool _isJumping;
 
+    // UNDONE
     [Header("WallClimbing")]
-    [SerializeField] private Transform _wallUpChecker;
-    [SerializeField] private Transform _wallDownChecker;
+    [SerializeField] private Transform _wallChecker;
     [SerializeField] private LayerMask _wallLayer;
     [SerializeField] private float _upDownSpeed;
     [SerializeField] private float _slideSpeed = 0;
-    private float _gravityRef;
 
-    private float _wallUpRadiusChecker;
-    private float _wallDownRadiusChecker;
     private bool _onWall;
+    private float _wallRadiusChecker;
+
+
+    // UNDONE
+    [Header("WallJump")]
+    [SerializeField] private float _jumpWallTime;
+    [SerializeField] private float _timerJumpWall;
+    [SerializeField] private Vector2 _jumpAngle = new Vector2(3.5f, 10);
+    private bool _blockMoveX;
 
     private bool _isRight = true;
 
@@ -41,8 +49,7 @@ public class PlayerMove : MonoBehaviour
         _gravityRef = _rigidBody.gravityScale;
 
         _groundRadiusChecker = _feetPosition.GetComponentInChildren<CircleCollider2D>().radius;
-        _wallUpRadiusChecker = _wallUpChecker.GetComponentInChildren<CircleCollider2D>().radius;
-        _wallDownRadiusChecker = _wallDownChecker.GetComponentInChildren<CircleCollider2D>().radius;
+        _wallRadiusChecker = _wallChecker.GetComponentInChildren<CircleCollider2D>().radius;
     }
 
     private void Update()
@@ -62,15 +69,14 @@ public class PlayerMove : MonoBehaviour
 
     private void FixedUpdate()
     {
-        Vector2 movement = new Vector2(_moveX * _speed, _rigidBody.velocity.y);
-        _rigidBody.velocity = movement;
-
-        MoveWall();
+        WallMove();
+        Move();
+        WallJump();
     }
 
     private void WallCheck()
     {
-        _onWall = (Physics2D.OverlapCircle(_wallUpChecker.position, _wallUpRadiusChecker, _wallLayer)) && (Physics2D.OverlapCircle(_wallDownChecker.position, _wallDownRadiusChecker, _wallLayer));
+        _onWall = Physics2D.OverlapCircle(_wallChecker.position, _wallRadiusChecker, _wallLayer);
     }
 
     private void GrounCheck()
@@ -88,21 +94,34 @@ public class PlayerMove : MonoBehaviour
         }
     }
 
-    private void Move(float moveX)
+    private void Move()
+    {
+        if (!_blockMoveX)
+        {
+            _rigidBody.velocity = new Vector2(_moveX * _speed, _rigidBody.velocity.y);
+        }
+    }
+
+    private void MoveSetter(float moveX)
     {
         _moveX = moveX;
     }
 
-    private void MoveWall()
+    private void WallMove()
     {
-        if (_onWall == true && _isGrounded != false)
+        if (_onWall == true && _isGrounded == false)
         {
             movement.y = Input.GetAxisRaw("Vertical");
-            if (movement.y == 0)
+
+            if (!_blockMoveX)
             {
-                _rigidBody.gravityScale = 0;
-                _rigidBody.velocity = new Vector2(0, _slideSpeed);
+                if (movement.y == 0)
+                {
+                    _rigidBody.gravityScale = 0;
+                    _rigidBody.velocity = new Vector2(0, _slideSpeed);
+                }
             }
+
             if (movement.y != 0)
             {
                 _rigidBody.velocity = new Vector2(_rigidBody.velocity.x, movement.y * _upDownSpeed);
@@ -111,6 +130,26 @@ public class PlayerMove : MonoBehaviour
         else if (_isGrounded == false && _onWall == false)
         {
             _rigidBody.gravityScale = _gravityRef;
+        }
+    }
+
+    private void WallJump()
+    {
+        if (_onWall == true && _isGrounded == false && Input.GetKeyDown(KeyCode.Space))
+        {
+            _blockMoveX = true;
+
+            Flip();
+            _rigidBody.velocity = new Vector2(transform.localScale.x * _jumpAngle.x, _jumpAngle.y);
+        }
+
+        if (_blockMoveX && (_timerJumpWall += Time.deltaTime) >= _jumpWallTime)
+        {
+            if (_onWall == true || _isGrounded == true || _moveX != 0)
+            {
+                _blockMoveX = false;
+                _timerJumpWall = 0;
+            }
         }
     }
 
@@ -125,12 +164,12 @@ public class PlayerMove : MonoBehaviour
     private void OnEnable()
     {
         PlayerInput.OnJump += Jump;
-        PlayerInput.OnMove += Move;
+        PlayerInput.OnMove += MoveSetter;
     }
 
     private void OnDisable()
     {
-        PlayerInput.OnMove -= Move;
+        PlayerInput.OnMove -= MoveSetter;
         PlayerInput.OnJump -= Jump;
     }
 }
