@@ -10,7 +10,7 @@ public class PlayerMove : MonoBehaviour
 
     [Header("Move")]
     [SerializeField] private float _speed = 1f;
-    private Vector2 movement;
+    private Vector2 _movement;
     private float _moveX = 0f;
 
     // UNDONE
@@ -37,7 +37,7 @@ public class PlayerMove : MonoBehaviour
     // UNDONE
     [Header("WallJump")]
     [SerializeField] private float _jumpWallTime;
-    [SerializeField] private float _timerJumpWall;
+    [SerializeField] private float _timerJumpWall; 
     [SerializeField] private Vector2 _jumpAngle = new Vector2(3.5f, 10);
     private bool _blockMoveX;
 
@@ -101,7 +101,6 @@ public class PlayerMove : MonoBehaviour
             _rigidBody.velocity = new Vector2(_moveX * _speed, _rigidBody.velocity.y);
         }
     }
-
     private void MoveSetter(float moveX)
     {
         _moveX = moveX;
@@ -111,20 +110,20 @@ public class PlayerMove : MonoBehaviour
     {
         if (_onWall == true && _isGrounded == false)
         {
-            movement.y = Input.GetAxisRaw("Vertical");
+            _movement.y = Input.GetAxisRaw("Vertical");
 
             if (!_blockMoveX)
             {
-                if (movement.y == 0)
+                if (_movement.y == 0)
                 {
                     _rigidBody.gravityScale = 0;
                     _rigidBody.velocity = new Vector2(0, _slideSpeed);
                 }
             }
 
-            if (movement.y != 0)
+            if (_movement.y != 0)
             {
-                _rigidBody.velocity = new Vector2(_rigidBody.velocity.x, movement.y * _upDownSpeed);
+                _rigidBody.velocity = new Vector2(_rigidBody.velocity.x, _movement.y * _upDownSpeed);
             }
         }
         else if (_isGrounded == false && _onWall == false)
@@ -137,19 +136,16 @@ public class PlayerMove : MonoBehaviour
     {
         if (_onWall == true && _isGrounded == false && Input.GetKeyDown(KeyCode.Space))
         {
-            _blockMoveX = true;
-
+            _moveX = 0;
             Flip();
             _rigidBody.velocity = new Vector2(transform.localScale.x * _jumpAngle.x, _jumpAngle.y);
+            _blockMoveX = true;
         }
 
         if (_blockMoveX && (_timerJumpWall += Time.deltaTime) >= _jumpWallTime)
-        {
-            if (_onWall == true || _isGrounded == true || _moveX != 0)
-            {
+        {         
                 _blockMoveX = false;
-                _timerJumpWall = 0;
-            }
+                _timerJumpWall = 0;    
         }
     }
 

@@ -9,13 +9,14 @@ public class PlayerInput : MonoBehaviour
 
     public static event Action<float> OnMove;
     public static event Action<bool> OnJump;
-
+ 
     private void Update()
     {
 #if  UNITY_EDITOR
-        OnMove?.Invoke(Input.GetAxisRaw("Horizontal")); 
+
+        OnMove?.Invoke(Input.GetAxisRaw("Horizontal"));
         OnJump?.Invoke(Input.GetKeyDown(KeyCode.Space));
-       
+
 #endif
 #if  UNITY_ANDROID
         //_leftButton.gameObject.SetActive(true);
