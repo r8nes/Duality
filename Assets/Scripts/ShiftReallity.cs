@@ -5,35 +5,14 @@ using UnityEngine;
 public class ShiftReallity : MonoBehaviour
 {
     private Animator _animator;
-
-    [SerializeField] private float _maskChecker;
-    [SerializeField] private Collider2D[] _invisibleBlockColliders;
-    [SerializeField] private LayerMask _groundLayer;
-    private SpriteMask mask;
     private bool isOpen = false;
-    private bool _isCollidersAppers;
 
     private void Start()
     {
-        _animator = GetComponent<Animator>(); 
+        _animator = GetComponent<Animator>();
     }
     private void Update()
     {
-        _maskChecker =transform.GetComponent<CircleCollider2D>().radius;
-        _invisibleBlockColliders = Physics2D.OverlapCircleAll(transform.position, _maskChecker * 10f, _groundLayer);
-
-        if (_invisibleBlockColliders.Length != 0)
-        {
-            _isCollidersAppers = true;  
-        }
-
-        HashSet<Collider2D> hashCollider = new HashSet<Collider2D>();
-
-        for (int i = 0; i < _invisibleBlockColliders.Length; i++)
-        {
-            hashCollider.Add(_invisibleBlockColliders[i]);
-        }
-
         if (isOpen == false && Input.GetKeyDown(KeyCode.E))
         {
             _animator.SetBool("isOn", true);
@@ -42,25 +21,14 @@ public class ShiftReallity : MonoBehaviour
         else if (isOpen == true && Input.GetKeyDown(KeyCode.E))
         {
             _animator.SetBool("isOn", false);
-            
+
             isOpen = false;
         }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(_isCollidersAppers)
-        {
-            for (int i = 0; i < _invisibleBlockColliders.Length; i++)
-            {
-                Detect(_invisibleBlockColliders[i]);
-            }
-        }
-
-        if (collision.gameObject.GetComponent<SpriteRenderer>().maskInteraction == SpriteMaskInteraction.VisibleOutsideMask)
-        {
-            collision.isTrigger = true;
-        }   
+        Detect(collision);
     }
 
     private void OnTriggerExit2D(Collider2D collision)
@@ -68,22 +36,28 @@ public class ShiftReallity : MonoBehaviour
         Undetect(collision);
     }
 
-    private void Detect(Collider2D visible)
-    {      
-        visible.isTrigger = false; 
+    private void Detect(Collider2D collision)
+    {
+        if (collision.gameObject.GetComponent<SpriteRenderer>().maskInteraction == SpriteMaskInteraction.VisibleOutsideMask)
+        {
+            collision.isTrigger = true;
+        }
+        else if (collision.gameObject.GetComponent<SpriteRenderer>().maskInteraction == SpriteMaskInteraction.VisibleInsideMask)
+        {
+            collision.isTrigger = false;
+        }
     }
 
-    private void Undetect(Collider2D block) 
+    private void Undetect(Collider2D collision)
     {
-        switch (block.tag)
+
+        if (collision.gameObject.GetComponent<SpriteRenderer>().maskInteraction == SpriteMaskInteraction.VisibleOutsideMask)
         {
-            case "InvisibleBlock":
-                block.isTrigger = true;
-                break;
-            case "ReverseBlock":
-                block.isTrigger = false;
-                break;
+            collision.isTrigger = false;
         }
-        _isCollidersAppers = false;
+        else if (collision.gameObject.GetComponent<SpriteRenderer>().maskInteraction == SpriteMaskInteraction.VisibleInsideMask)
+        {
+            collision.isTrigger = true;
+        }
     }
 }
